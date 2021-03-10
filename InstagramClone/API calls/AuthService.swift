@@ -76,9 +76,7 @@ struct AuthSevice {
                      print("DEBUG: just done creating user")
                  }
                  
-                 
              }
-         
      }
      
 //------------------------------------------------------------------end

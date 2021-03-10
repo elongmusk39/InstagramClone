@@ -6,14 +6,23 @@
 //
 
 import UIKit
+import SDWebImage
 
 class ProfileHeader: UICollectionReusableView {
+    
+    //this viewModel will get set from ProfileController, thus triggers the "didSet" func
+    var viewModel: ProfileHeaderViewModel? {
+        didSet {
+            print("DEBUG: configuring from ProfileHeader..")
+            configure()
+        }
+    }
     
 //MARK: - Properties
     
     private let profileImageView: UIImageView = {
         let iv = UIImageView()
-        iv.image = #imageLiteral(resourceName: "venom-7")
+        iv.image = #imageLiteral(resourceName: "profile_unselected")
         iv.contentMode = .scaleAspectFill
         iv.clipsToBounds = true
         
@@ -22,7 +31,8 @@ class ProfileHeader: UICollectionReusableView {
     
     private let nameLabel: UILabel = {
         let lb = UILabel()
-        lb.text = "Eddie Brock"
+        lb.text = "Fullname.."
+        lb.textAlignment = .center
         lb.font = UIFont.systemFont(ofSize: 14, weight: .bold)
         
         return lb
@@ -164,6 +174,15 @@ class ProfileHeader: UICollectionReusableView {
         attributedText.append(NSAttributedString(string: label, attributes: [.font: UIFont.systemFont(ofSize: 16), .foregroundColor: UIColor.lightGray]))
         
         return attributedText
+    }
+    
+    
+    func configure() {
+        print("DEBUG: configure ProfileHeader..")
+        
+        guard let viewMod = viewModel else { return }
+        nameLabel.text = viewMod.fullname
+        profileImageView.sd_setImage(with: viewMod.profileImageUrl)
     }
     
     

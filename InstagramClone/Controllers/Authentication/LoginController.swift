@@ -7,11 +7,17 @@
 
 import UIKit
 
+protocol AuthenticationDelegate: class {
+    func authenticationDidComplete()
+}
+
 class LoginController: UIViewController {
 
 //MARK: - Properties
     
     private var viewModel = LoginViewModel()
+    weak var delegate: AuthenticationDelegate? //delegate to MainTabController
+    
     
     private let iconImage: UIImageView = {
         let iv = UIImageView(image: #imageLiteral(resourceName: "Instagram_logo_white"))
@@ -118,6 +124,7 @@ class LoginController: UIViewController {
     @objc func handleShowSignUp() {
         print("DEBUG: present registration page..")
         let vc = RegistrationController()
+        vc.delegateSignUp = delegate //set the same protocol for SignUpVC
         navigationController?.pushViewController(vc, animated: true)
         
     }
@@ -135,6 +142,7 @@ class LoginController: UIViewController {
             }
             
             print("DEBUG: successfully log user \(emailTyped) in!")
+            self.delegate?.authenticationDidComplete()
             self.dismiss(animated: true, completion: nil)
         }
     }

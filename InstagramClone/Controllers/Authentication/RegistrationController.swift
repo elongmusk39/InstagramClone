@@ -9,6 +9,8 @@ import UIKit
 
 class RegistrationController: UIViewController {
 
+    weak var delegateSignUp: AuthenticationDelegate? //this protocol was passed from LoginVC
+    
 //MARK: - Properties
     
     private let plusPhotoButton: UIButton = {
@@ -32,6 +34,7 @@ class RegistrationController: UIViewController {
     
     private let passwordTextField: UITextField = {
         let tf = CustomTextField(placeHolder: "Password:")
+        tf.autocapitalizationType = .none
         //tf.isSecureTextEntry = true
         
         return tf
@@ -66,6 +69,7 @@ class RegistrationController: UIViewController {
         pi.image = #imageLiteral(resourceName: "plus_unselected") //let's set a default profileImage in case user dont want to set the profileImage when registering
         return pi
     }()
+    
     
 //MARK: - Lifecycle
     
@@ -136,6 +140,7 @@ class RegistrationController: UIViewController {
             }
             
             print("DEBUG: successfully register new user \(emailTyped)")
+            self.delegateSignUp?.authenticationDidComplete()
             self.dismiss(animated: true, completion: nil)
         }
     }
@@ -181,7 +186,7 @@ extension RegistrationController: UIImagePickerControllerDelegate, UINavigationC
             print("DEBUG: error setting selectedImage")
             return
         }
-        //let's set the picked image to the profileImage
+        //let's set the picked image equal to the profileImage
         profileImage.image = selectedImage
         
         //let's set the button image to the selected image

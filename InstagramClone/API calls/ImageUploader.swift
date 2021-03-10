@@ -22,7 +22,7 @@ struct ImageUploader {
         let filename = NSUUID().uuidString
         let ref = Storage.storage().reference(withPath: "/profile_images/\(filename)")
         
-        //let's put the image into the database, Storage
+        //let's put the image into the database in Storage
         ref.putData(imageData, metadata: nil) { (metadata, error) in
             guard error == nil else {
                 print("DEBUG: error putData - \(String(describing: error?.localizedDescription))")

@@ -15,37 +15,48 @@ class ProfileController: UICollectionViewController {
 
 //MARK: - Properties
 
+    /*
     //if you dont like the didSet, then put it in func fetchUsers() in the API section
-    var userProfile: User? {
-        didSet { navigationItem.title = userProfile?.username }
+    private var userProfile: User? {
+        didSet {
+            print("DEBUG: let's set the title..")
+            navigationItem.title = userProfile?.username
+            collectionView.reloadData() //this func bascially re-call the collectionView (re-call all extensions of Datasource and Delegate)
+        }
     } //when this var is called, it immediately set the navigationItem.title
+    */
     
+    private var userProfile: User
     
 //MARK: - Lifecycle
+    
+    init(userFetched: User) {
+        self.userProfile = userFetched
+        super.init(collectionViewLayout: UICollectionViewFlowLayout())
+    }
+    
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+    
     
     override func viewDidLoad() {
         super.viewDidLoad()
 
         configureCollectionView()
-        fetchUsers()
+        
     }
     
     
     
 //MARK: - API
     
-    func fetchUsers() {
-        print("DEBUG: Calling API to fetch userInfo")
-        UserService.fetchUser { (userInfoFetched) in
-            print("DEBUG: filling userInfo with data fetched from Firebase")
-            //let's fill up the var "userProfile" with data fetched from Firebase
-            self.userProfile = userInfoFetched //"userInfoFetched" is var "userInfo" in file "UserService"
-        }
-    }
+    
 
 //MARK: - Helpers
     
     func configureCollectionView() {
+        navigationItem.title = userProfile.username
         collectionView.backgroundColor = .white
         
         collectionView.register(ProfileCell.self, forCellWithReuseIdentifier: cellIdentifier)
@@ -73,7 +84,12 @@ extension ProfileController {
     
     //this func will implement the headercell (ProfileHeader)
     override func collectionView(_ collectionView: UICollectionView, viewForSupplementaryElementOfKind kind: String, at indexPath: IndexPath) -> UICollectionReusableView {
+        print("DEBUG: returning ProfileHeader")
         let header = collectionView.dequeueReusableSupplementaryView(ofKind: kind, withReuseIdentifier: headerIdentifier, for: indexPath) as! ProfileHeader
+        
+        //let's fill in the "var viewModel" with info fetched from Firebase. We also trigger the "var viewModel" of ProfileHeader file to call its didSet function
+        header.viewModel = ProfileHeaderViewModel(userinfo: userProfile)
+        
         
         return header
     }

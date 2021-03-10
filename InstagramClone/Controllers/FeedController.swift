@@ -8,6 +8,7 @@
 import UIKit
 import Firebase
 
+//the reuseIdentifier: when a cell is scrolled through (we scroll down), it moves to memory catch. When we scroll up to re-see the cell, the app will look for the reuseIdentifier in the memory catch, if we have scroll through before, then it just pulls that cell out of memroy catch associated with that reuseIdentifier without creating a new cell
 private let reuseIdentifier = "Cell"
 
 class FeedController: UICollectionViewController {
@@ -33,6 +34,8 @@ class FeedController: UICollectionViewController {
             print("DEBUG: logging user out..")
             try Auth.auth().signOut()
             let vc = LoginController()
+            vc.delegate = self.tabBarController as? MainTabController
+            
             let nav = UINavigationController(rootViewController: vc)
             nav.modalPresentationStyle = .fullScreen
             self.present(nav, animated: true, completion: nil)
@@ -73,7 +76,7 @@ extension FeedController {
     
     override func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         
-        //the deueue stuff: when user scrolls, the cells will be created and presented on screen. When user scrolls through the cells, then cells are "dequeued" and moved to catch. This avoids loading thousands of cells when the app first loaded
+        //the deueue stuff: when user scrolls, the cells will be created and presented on screen. When user scrolls through the cells, then cells are "dequeued" and moved to memory catch. This avoids loading thousands of cells when the app first loaded
         let cell = collectionView.dequeueReusableCell(withReuseIdentifier: reuseIdentifier, for: indexPath) as! FeedCell
         //cell.backgroundColor = .red
         
