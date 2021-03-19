@@ -52,6 +52,7 @@ struct AuthSevice {
 //you can use the func below to replace the func above, if there is error
 //------------------------------------------------------------------begin
     
+    //the "static" allows this func to be accessed from any where
      static func registerUser(withCredential credentials: AuthCredentials, completionBlock: @escaping(Error?) -> Void) {
          //print("DEBUG: credentials are \(credentials)")
          

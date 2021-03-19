@@ -9,6 +9,11 @@ import UIKit
 
 class ProfileCell: UICollectionViewCell {
     
+    //this var gets filled up with data in the ProfileController
+    var viewModel: PostViewModel? {
+        didSet { configure() }
+    }
+    
 //MARK: - Properties
     
     private let postImageView: UIImageView = {
@@ -37,4 +42,10 @@ class ProfileCell: UICollectionViewCell {
     
     
 //MARK: - Helperes
+    
+    func configure() {
+        guard let viewMD = viewModel else { return }
+        postImageView.sd_setImage(with: viewMD.imageUrl)
+    }
+    
 }

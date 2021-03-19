@@ -7,9 +7,22 @@
 
 import UIKit
 
+//this protocol will be set in FeedControleler
+protocol FeedCellDelegate: class {
+    func cell(_ cell: FeedCell, commentFor post: Post)
+    func cellLike(_ cell: FeedCell, didLike post: Post)
+}
+
 //When register this cell to the feedController, first register it at "collectionView.register()" and then in the Datasource extension, import it in the "Dequeue" stuff
 class FeedCell: UICollectionViewCell {
-   
+    
+    //whenever var "viewModel" got modified, it calls the "didSet"
+    var viewModel: PostViewModel? {
+        didSet { configure() }
+    }
+    
+    weak var delegate: FeedCellDelegate?
+    
 //MARK: - Properties
     
     private let profileImageView: UIImageView = {
@@ -18,7 +31,7 @@ class FeedCell: UICollectionViewCell {
         iv.clipsToBounds = true
         iv.isUserInteractionEnabled = true
         //iv.backgroundColor = .systemPurple
-        iv.image = #imageLiteral(resourceName: "venom-7")
+        //iv.image = #imageLiteral(resourceName: "venom-7")
         
         return iv
     }()
@@ -45,10 +58,12 @@ class FeedCell: UICollectionViewCell {
         return iv
     }()
     
-    private lazy var likeButton: UIButton = {
+    //not private since we gonna access it in FeedController, at protocol
+    lazy var likeButton: UIButton = {
         let btn = UIButton(type: .system)
         btn.setImage(#imageLiteral(resourceName: "like_unselected"), for: .normal)
         btn.tintColor = .black
+        btn.addTarget(self, action: #selector(didtapLike), for: .touchUpInside)
         
         return btn
     }()
@@ -57,6 +72,7 @@ class FeedCell: UICollectionViewCell {
         let btn = UIButton(type: .system)
         btn.setImage(#imageLiteral(resourceName: "comment"), for: .normal)
         btn.tintColor = .black
+        btn.addTarget(self, action: #selector(didTapComment), for: .touchUpInside)
         
         return btn
     }()
@@ -141,6 +157,17 @@ class FeedCell: UICollectionViewCell {
         
     }
     
+    @objc func didTapComment() {
+        print("DEBUG: CommentButton tapped, calling API..")
+        guard let viewMod = self.viewModel else { return }
+        delegate?.cell(self, commentFor: viewMod.post) //conformed in FeedControleler
+    }
+    
+    @objc func didtapLike() {
+        print("DEBUG: did tap like..")
+        guard let viewMod = self.viewModel else { return }
+        delegate?.cellLike(self, didLike: viewMod.post)
+    }
     
 //MARK: - Helpers
     
@@ -151,6 +178,22 @@ class FeedCell: UICollectionViewCell {
         
         addSubview(stackView)
         stackView.anchor(top: postImageView.bottomAnchor, width: 120, height: 50)
+    }
+    
+    
+    func configure() {
+        guard let profileUrl = viewModel?.ownerProfileImageUrl else {return}
+        //print("DEBUG: ownerProfileURL \(profileUrl)")
+        
+        captionLabel.text = viewModel?.caption
+        postImageView.sd_setImage(with: viewModel?.imageUrl)
+        
+        profileImageView.sd_setImage(with: profileUrl)
+        usernameButton.setTitle(viewModel?.ownerUsername, for: .normal)
+        
+        likeLabel.text = viewModel?.likesLabelText
+        likeButton.tintColor = viewModel?.likeButtonTintColor
+        likeButton.setImage(viewModel?.likeButtonImage, for: .normal)
     }
     
     

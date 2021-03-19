@@ -8,16 +8,14 @@
 import UIKit
 import Firebase
 
+typealias FirestoreCompletion = (Error?) -> Void //this is just a shortcut whenever we want to implement a completion handler
+
 struct UserService {
     
     //when this func done its thing, it will execute the completionBlock, in this case, it will return user info fetched from Firebase
-    static func fetchUser(completionBlock: @escaping(User) -> Void) {
+    static func fetchUser(withUID uid: String, completionBlock: @escaping(User) -> Void) {
         
         print("DEBUG: from UserService, fetching user..")
-        guard let uid = Auth.auth().currentUser?.uid else {
-            print("DEBUG: connot find uid")
-            return
-        }
         
         COLLECTION_USERS.document(uid).getDocument { (snapshot, error) in
             
@@ -57,7 +55,7 @@ struct UserService {
     
 //func below uses "for-loop" to get data of all users, above func uses "map". they kind of do the same shit but the above version is more elegant
 //----------------------------------------------------------------------begin
-    /*
+/*
     //this func will return an array (of type: User) after it done its thing
     static func fetchUserlist(completionBlock: @escaping([User]) -> Void) {
         var userArray = [User]()
@@ -81,7 +79,83 @@ struct UserService {
         }
     }//end of func
 //----------------------------------------------------------------------end
-    */
+*/
     
+    
+//MARK: - Following stuff
+    
+    //with this func, we have 2 big collections, one is for all the current users and their followers, one is for all current users and their following accounts
+    static func follow(uidOtherUser: String, emailOtherUser: String, completionBlock: @escaping(FirestoreCompletion)) {
+        
+        guard let currentUid = Auth.auth().currentUser?.uid else { return }
+        guard let currentEmail = Auth.auth().currentUser?.email else {
+            return
+        }
+        let dataCurrent: [String:Any] = ["Email": currentEmail,
+                            "UserID": currentUid]
+        let dataOtherUser: [String:Any] = ["Email": emailOtherUser,
+                                           "UserID": uidOtherUser]
+        
+        //let's deal with the API
+        COLLECTION_FOLLOWING.document(currentUid).collection("user-following").document(uidOtherUser).setData(dataOtherUser) { (error) in
+            
+            COLLECTION_FOLLOWERS.document(uidOtherUser).collection("user-followers").document(currentUid).setData(dataCurrent, completion: completionBlock)
+        }
+    }
+    
+    
+    static func unfollow(uidOtherUser: String, completionBlock: @escaping(FirestoreCompletion)) {
+        
+        guard let currentUid = Auth.auth().currentUser?.uid else { return }
+        
+        //let's deal with the API
+        COLLECTION_FOLLOWING.document(currentUid).collection("user-following").document(uidOtherUser).delete { (error) in
+            
+            COLLECTION_FOLLOWERS.document(uidOtherUser).collection("user-followers").document(currentUid).delete(completion: completionBlock)
+        }
+        
+    }
+    
+    
+    static func checkIfUserIsFollowed(uidOtherUser: String, completionBlock: @escaping(Bool) -> Void) {
+        
+        guard let currentUid = Auth.auth().currentUser?.uid else { return }
+        
+        COLLECTION_FOLLOWING.document(currentUid).collection("user-following").document(uidOtherUser).getDocument { (snapshot, error) in
+            
+            //if snapshot exists, currentUser is following the user, viceVersa
+            guard let isFollowed = snapshot?.exists else { return }
+            completionBlock(isFollowed) //"isFollowed" is Bool 
+        }
+        
+    }
+    
+    
+//MARK: fetch user stats
+    
+    static func fetchUserStats(generalUID: String, completionBlock: @escaping(UserStats) -> Void) {
+        
+        COLLECTION_FOLLOWERS.document(generalUID).collection("user-followers").getDocuments { (snapshot, error) in
+            
+            let numberOfFollowers = snapshot?.documents.count ?? 0
+            
+            COLLECTION_FOLLOWING.document(generalUID).collection("user-following").getDocuments { (snapshot, error) in
+                
+                let numberOfFollowing = snapshot?.documents.count ?? 0
+                
+                //only access posts that relate to owner, not ALL posts
+                COLLECTION_POSTS.whereField("ownerUid", isEqualTo: generalUID).getDocuments { (snapshot, error) in
+                    
+                    let numberOfPosts = snapshot?.documents.count ?? 0
+                    
+                    completionBlock(UserStats(followers: numberOfFollowers, following: numberOfFollowing, post: numberOfPosts))
+                }
+                
+            }
+        }
+        
+    }//end of func
+    
+
     
 }

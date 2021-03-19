@@ -27,11 +27,12 @@ class ProfileController: UICollectionViewController {
     */
     
     private var userProfile: User
+    private var postProfile = [Post]()
     
 //MARK: - Lifecycle
     
     init(userFetched: User) {
-        self.userProfile = userFetched
+        self.userProfile = userFetched //let's fill in "userProfile" with data fetched from SearchController()
         super.init(collectionViewLayout: UICollectionViewFlowLayout())
     }
     
@@ -44,15 +45,40 @@ class ProfileController: UICollectionViewController {
         super.viewDidLoad()
 
         configureCollectionView()
-        
+        checkIfUserIsFollowed()
+        fetchUserStats()
+        fetchPosts()
     }
     
     
     
 //MARK: - API
     
-    
+    func checkIfUserIsFollowed() {
+        print("DEBUG: checking if this user is followed..")
+        UserService.checkIfUserIsFollowed(uidOtherUser: userProfile.uid) { (isFollowed) in
+            self.userProfile.isFollowed = isFollowed //update the new info and assign it to "self.userProfile"
+            self.collectionView.reloadData() //let's recall all extensions of this ProfileController with updated info
+        }
+    }
 
+    
+    func fetchUserStats() {
+        print("DEBUG: fetching user stats..")
+        UserService.fetchUserStats(generalUID: userProfile.uid) { (stats) in
+            self.userProfile.stats = stats //update the stats
+            self.collectionView.reloadData()
+        }
+    }
+    
+    
+    func fetchPosts() {
+        PostService.fetchPostProfile(forUser: userProfile.uid) { (post) in
+            self.postProfile = post //fill up this var with post's data
+            self.collectionView.reloadData()
+        }
+    }
+    
 //MARK: - Helpers
     
     func configureCollectionView() {
@@ -72,12 +98,15 @@ class ProfileController: UICollectionViewController {
 extension ProfileController {
     
     override func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        return 9 //this is the item, nothing to do with the header
+        return postProfile.count //this is the item, nothing to do with the header
     }
     
     //implement the customized ProfileCell
     override func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         let cell = collectionView.dequeueReusableCell(withReuseIdentifier: cellIdentifier, for: indexPath) as! ProfileCell
+        
+        //let's fill up the viewModel of profileCell with data fetched
+        cell.viewModel = PostViewModel(posts: postProfile[indexPath.row])
         
         return cell
     }
@@ -86,6 +115,8 @@ extension ProfileController {
     override func collectionView(_ collectionView: UICollectionView, viewForSupplementaryElementOfKind kind: String, at indexPath: IndexPath) -> UICollectionReusableView {
         print("DEBUG: returning ProfileHeader")
         let header = collectionView.dequeueReusableSupplementaryView(ofKind: kind, withReuseIdentifier: headerIdentifier, for: indexPath) as! ProfileHeader
+        
+        header.delegate = self //conform to protocol from ProfileHeader
         
         //let's fill in the "var viewModel" with info fetched from Firebase. We also trigger the "var viewModel" of ProfileHeader file to call its didSet function
         header.viewModel = ProfileHeaderViewModel(userinfo: userProfile)
@@ -98,9 +129,15 @@ extension ProfileController {
 
 
 //MARK: - Extension Delegate
-//same like the Datasource
+//this gets called whenever we click on a cell (in this case, an image)
 extension ProfileController {
-    
+    override func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
+        print("DEBUG: post is \(postProfile[indexPath.row].caption)")
+        
+        let vc = FeedController(collectionViewLayout: UICollectionViewFlowLayout())
+        vc.postSingle = postProfile[indexPath.row] //set value to postSingle
+        navigationController?.pushViewController(vc, animated: true)
+    }
 }
 
 
@@ -129,6 +166,38 @@ extension ProfileController: UICollectionViewDelegateFlowLayout {
         let width = (view.frame.width - 2) / 3
         return CGSize(width: width, height: width) //it's a square
     }
+    
+    
+}
+
+//MARK: - Protocols
+//execute the protocol from ProfileHeader, remember to write ".delegate = self"
+extension ProfileController: ProfileHeaderDelegate {
+    
+    func header(_ header: ProfileHeader, didTapActionBtnFor otherUser: User) {
+        print("DEBUG: protocol from ProfileHeader and executed in ProfileController")
+        
+        if otherUser.isCurrentUser {
+            print("DEBUG: show edit profile..")
+            
+        } else if otherUser.isFollowed {
+            print("DEBUG: let's unfollow user..") //when currentUser is following another, clicking the button would execute "unfollow" action of that user
+            UserService.unfollow(uidOtherUser: otherUser.uid) { (error) in
+                print("DEBUG: done API, just unfollow a user..")
+                self.userProfile.isFollowed = false //change this property to change the UI
+                self.collectionView.reloadData()
+            }
+            
+        } else {
+            print("DEBUG: let's follow user..")
+            UserService.follow(uidOtherUser: otherUser.uid, emailOtherUser: otherUser.email) { (error) in
+                print("DEBUG: done API, just follow a new user..")
+                self.userProfile.isFollowed = true //change this property to change the UI
+                self.collectionView.reloadData() //reload the collectionVIew means reload all extensions in this file means reload the ProfileHeader wit new info update, so UI updates too
+            }
+        }
+        
+    } //end of func
     
     
 }

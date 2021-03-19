@@ -8,6 +8,12 @@
 import UIKit
 import SDWebImage
 
+//this protocol will delegate action to ProfileController
+protocol ProfileHeaderDelegate: class {
+    func header(_ header: ProfileHeader, didTapActionBtnFor otherUser: User)
+    
+}
+
 class ProfileHeader: UICollectionReusableView {
     
     //this viewModel will get set from ProfileController, thus triggers the "didSet" func
@@ -17,6 +23,8 @@ class ProfileHeader: UICollectionReusableView {
             configure()
         }
     }
+    
+    weak var delegate: ProfileHeaderDelegate?
     
 //MARK: - Properties
     
@@ -41,7 +49,7 @@ class ProfileHeader: UICollectionReusableView {
     //gotta make this a "lazy var" in order to addTarget. If you make it "let", the cell initially has not added the button so it has no place to addTarget. The "lazy var" will load the button once the func init in lifecycle gets called, which we now have a button to addTarget
     private lazy var editProfileFollowButton: UIButton = {
         let btn = UIButton(type: .system)
-        btn.setTitle("Edit profile", for: .normal)
+        btn.setTitle("Loading..", for: .normal)
         btn.setTitleColor(.black, for: .normal)
         btn.titleLabel?.font = UIFont.systemFont(ofSize: 14, weight: .bold)
         btn.layer.borderWidth = 0.5
@@ -57,8 +65,7 @@ class ProfileHeader: UICollectionReusableView {
         let lb = UILabel()
         lb.numberOfLines = .zero
         lb.textAlignment = .center
-        //haha gotta get used to with the attributedText now
-        lb.attributedText = attributedStatText(value: 5, label: "Posts")
+        //lb.attributedText = attributedStatText(value: 5, label: "Posts")
         
         return lb
     }()
@@ -67,7 +74,7 @@ class ProfileHeader: UICollectionReusableView {
         let lb = UILabel()
         lb.numberOfLines = .zero
         lb.textAlignment = .center
-        lb.attributedText = attributedStatText(value: 2, label: "Follower")
+        //lb.attributedText = attributedStatText(value: 2, label: "Follower")
         
         return lb
     }()
@@ -76,7 +83,7 @@ class ProfileHeader: UICollectionReusableView {
         let lb = UILabel()
         lb.numberOfLines = .zero
         lb.textAlignment = .center
-        lb.attributedText = attributedStatText(value: 1, label: "Following")
+        //lb.attributedText = attributedStatText(value: 1, label: "Following")
         
         return lb
     }()
@@ -162,20 +169,12 @@ class ProfileHeader: UICollectionReusableView {
     
     @objc func handleEditProfileFollowTap() {
         print("DEBUG: editProfileButton tapped...")
-        
+        guard let viewMod = viewModel else { return }
+        delegate?.header(self, didTapActionBtnFor: viewMod.user)
     }
     
     
 //MARK: - Helpers
-    
-    func attributedStatText(value: Int, label: String) -> NSAttributedString {
-        //the "\n" means take another line
-        let attributedText = NSMutableAttributedString(string: "\(value)\n", attributes: [.font: UIFont.systemFont(ofSize: 18, weight: .bold)])
-        attributedText.append(NSAttributedString(string: label, attributes: [.font: UIFont.systemFont(ofSize: 16), .foregroundColor: UIColor.lightGray]))
-        
-        return attributedText
-    }
-    
     
     func configure() {
         print("DEBUG: configure ProfileHeader..")
@@ -183,7 +182,27 @@ class ProfileHeader: UICollectionReusableView {
         guard let viewMod = viewModel else { return }
         nameLabel.text = viewMod.fullname
         profileImageView.sd_setImage(with: viewMod.profileImageUrl)
+        
+        //set configure the editProfile button based on currentUser's status of follow/unfollow
+        editProfileFollowButton.setTitle(viewMod.followButtonText, for: .normal)
+        editProfileFollowButton.setTitleColor(viewMod.followBtnTextColor, for: .normal)
+        editProfileFollowButton.backgroundColor = viewMod.followBtnBackgroundColor
+        
+        //configure the stats labels
+        postLabel.attributedText = viewMod.numberOfPosts
+        followerLabel.attributedText = viewMod.numberOfFollowers
+        followingLabel.attributedText = viewMod.numberOfFollowing
     }
+    
+    
+    /* the func below is just good practice for attributeText
+    func attributedStatText(value: Int, label: String) -> NSAttributedString {
+        //the "\n" means take another line
+        let attributedText = NSMutableAttributedString(string: "\(value)\n", attributes: [.font: UIFont.systemFont(ofSize: 18, weight: .bold)])
+        attributedText.append(NSAttributedString(string: label, attributes: [.font: UIFont.systemFont(ofSize: 16), .foregroundColor: UIColor.lightGray]))
+        
+        return attributedText
+    }*/
     
     
 }
