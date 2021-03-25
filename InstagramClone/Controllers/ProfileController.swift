@@ -177,6 +177,9 @@ extension ProfileController: ProfileHeaderDelegate {
     func header(_ header: ProfileHeader, didTapActionBtnFor otherUser: User) {
         print("DEBUG: protocol from ProfileHeader and executed in ProfileController")
         
+        guard let tab = tabBarController as? MainTabController else {return}
+        guard let currentUser = tab.userMainTab else { return }
+        
         if otherUser.isCurrentUser {
             print("DEBUG: show edit profile..")
             
@@ -186,6 +189,8 @@ extension ProfileController: ProfileHeaderDelegate {
                 print("DEBUG: done API, just unfollow a user..")
                 self.userProfile.isFollowed = false //change this property to change the UI
                 self.collectionView.reloadData()
+                
+                PostService.updateUserFeedAfterFollowing(user: otherUser, didFollow: false)
             }
             
         } else {
@@ -194,6 +199,12 @@ extension ProfileController: ProfileHeaderDelegate {
                 print("DEBUG: done API, just follow a new user..")
                 self.userProfile.isFollowed = true //change this property to change the UI
                 self.collectionView.reloadData() //reload the collectionVIew means reload all extensions in this file means reload the ProfileHeader wit new info update, so UI updates too
+                
+                //let's upload a notification to the database
+                NotificationService.uploadNotification(toUID: otherUser.uid, toEmail: otherUser.email, fromUser: currentUser, type: .follow)
+                
+                //populate feeds associated with new followed user (if you want to populate all post from database, just erase this line)
+                PostService.updateUserFeedAfterFollowing(user: otherUser, didFollow: true)
             }
         }
         

@@ -21,7 +21,10 @@ class FeedController: UICollectionViewController {
         didSet { collectionView.reloadData() }
     }
     
-    var postSingle: Post?
+    //whenever postSingle gets set or modified, we trigger the "didSet". This property is created for us to show only a single post
+    var postSingle: Post? {
+        didSet { collectionView.reloadData() }
+    }
     
 //MARK: - Lifecycle
     
@@ -30,11 +33,18 @@ class FeedController: UICollectionViewController {
 
         configureUI()
         fetchPosts()
+        
+        if postSingle != nil {
+            checkIfUserLikedPost()
+        }
     }
     
     
 //MARK: _ API
     
+/*
+//-----------------------------------------------------------------begin
+    //this func will fetch all the post in the database
     func fetchPosts() {
         guard postSingle == nil else {
             print("DEBUG: a single post")
@@ -51,25 +61,51 @@ class FeedController: UICollectionViewController {
             //self.collectionView.reloadData() //either called here or "didSet"
         })
     }
+//-----------------------------------------------------------------end*/
+    
+    //this func will only fetch feed based on following
+    func fetchPosts() {
+        guard postSingle == nil else {
+            print("DEBUG: a single post")
+            return
+        } //if postSingle has a value, then we wont fetch all the posts
+        
+        PostService.fetchFeedPosts { (postsInfo) in
+            self.posts = postsInfo //assign data fetched to self.posts
+            
+            print("DEBUG: just fetch posts")
+            self.checkIfUserLikedPost()
+            self.collectionView.refreshControl?.endRefreshing()
+        }
+        
+    }
     
     
     func checkIfUserLikedPost() {
-        //we use forLoop to loop through all the fetched post for like-checking
-        self.posts.forEach { (eachPost) in
-            
-            PostService.checkIfUserLikedPost(postInfo: eachPost) { (likeOrNot) in
+        if let post = postSingle {
+            //this is when we present a single post from ProfileVC
+            PostService.checkIfUserLikedPost(postInfo: post) { likeOrNot in
+                self.postSingle?.didLike = likeOrNot
+            }
+        } else {
+            //this is when we present many posts in feedVC
+            //we use forLoop to loop through all the fetched post for like-checking
+            self.posts.forEach { (eachPost) in
                 
-                //print("DEBUG: post \(postStuff.ownerEmail) is \(didLike)")
-                
-                //just set "$0.postID == eachPost.postID"
-                if let index = self.posts.firstIndex(where: { $0.postID == eachPost.postID }) {
-                    self.posts[index].didLike = likeOrNot
+                PostService.checkIfUserLikedPost(postInfo: eachPost) { (likeOrNot) in
+                    
+                    //print("DEBUG: post \(postStuff.ownerEmail) is \(didLike)")
+                    
+                    //just set "$0.postID == eachPost.postID" and the loop will check every single post for liked
+                    if let index = self.posts.firstIndex(where: { $0.postID == eachPost.postID }) {
+                        self.posts[index].didLike = likeOrNot
+                    }
                 }
             }
-        }
+        }//done if-else
         
         
-    }
+    }//end of func
     
 //MARK: - Actions
     
@@ -92,6 +128,7 @@ class FeedController: UICollectionViewController {
     
     //remove all cells then re-fetch posts
     @objc func handleRefresh() {
+        print("DEBUG: refreshing...")
         posts.removeAll()
         fetchPosts()
     }
@@ -147,8 +184,6 @@ extension FeedController {
             cell.viewModel = PostViewModel(posts: posts[indexPath.row]) //let's set post's info fetched to match with cells' info
         }
         
-        
-        
         return cell
     }
 }
@@ -181,11 +216,16 @@ extension FeedController: FeedCellDelegate {
         navigationController?.pushViewController(vc, animated: true)
     }
     
+    
     func cellLike(_ cell: FeedCell, didLike post: Post) {
         print("DEBUG: like tapped, protocol conformed in FeedVC")
+        
+        guard let tab = tabBarController as? MainTabController else {return}
+        guard let userStuff = tab.userMainTab else { return }
+        
         cell.viewModel?.post.didLike.toggle() //the "toggle" property will change the value between true and false
         
-        if post.didLike {
+        if post.didLike { //if "post.didLike == true"...
             print("DEBUG: just unlike post..")
             
             PostService.unlikePost(postInfo: post) { (error) in
@@ -212,10 +252,25 @@ extension FeedController: FeedCellDelegate {
                 cell.likeButton.tintColor = .red
                 cell.viewModel?.post.likes = post.likes + 1
                 print("DEBUG: successfully upload like to DB")
+                
+                NotificationService.uploadNotification(
+                    toUID: post.ownerUid,
+                    toEmail: post.ownerEmail,
+                    fromUser: userStuff,
+                    type: .like,
+                    post: post)
             }
         }
         
     }//end of func
+    
+    
+    func cellProfile(_ cell: FeedCell, showProfile uid: String) {
+        UserService.fetchUser(withUID: uid) { (userInfo) in
+            let vc = ProfileController(userFetched: userInfo)
+            self.navigationController?.pushViewController(vc, animated: true)
+        }
+    }
     
     
 }

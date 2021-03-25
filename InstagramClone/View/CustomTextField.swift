@@ -13,6 +13,7 @@ class CustomTextField: UITextField {
     init(placeHolder: String) {
         super.init(frame: .zero)
         
+        autocapitalizationType = .none
         borderStyle = .none
         textColor = .white
         keyboardAppearance = .dark

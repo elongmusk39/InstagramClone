@@ -158,13 +158,16 @@ extension CommentController: CommentInputAccessoryViewDelegate {
         self.showLoader(true)
         
         guard let tab = tabBarController as? MainTabController else {return}
-        guard let userStuff = tab.userMainTab else { return }
+        guard let currentUser = tab.userMainTab else { return }
         
         //let's upload the comment to associated post
-        CommentService.uploadComment(commentText: comment, postID: postVar.postID, user: userStuff) { (error) in
+        CommentService.uploadComment(commentText: comment, postID: postVar.postID, user: currentUser) { (error) in
+            
             self.showLoader(false)
             inputView.clearCommentTextView()
             print("DEBUG: done uploading comment..")
+            
+            NotificationService.uploadNotification(toUID: self.postVar.ownerUid, toEmail: self.postVar.ownerEmail, fromUser: currentUser, type: .comment, post: self.postVar)
             
         }
     }

@@ -30,7 +30,7 @@ class MainTabController: UITabBarController {
         
         checkIfUserLoggedIn()
         fetchUsers()
-        //logOut()
+        
     }
     
     
@@ -95,6 +95,7 @@ class MainTabController: UITabBarController {
         
         
         let imageSelector = templateNavigationController(unselectedImage: #imageLiteral(resourceName: "plus_unselected"), selectedImage: UIImage(systemName: "plus.app.fill")!, rootVC: ImageSelectorController())
+        
         
         let notification = templateNavigationController(unselectedImage: #imageLiteral(resourceName: "like_unselected"), selectedImage: #imageLiteral(resourceName: "like_selected"), rootVC: NotificationController())
         

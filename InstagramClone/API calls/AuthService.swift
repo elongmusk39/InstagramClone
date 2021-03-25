@@ -49,7 +49,7 @@ struct AuthSevice {
     } //end of func
     */
     
-//you can use the func below to replace the func above, if there is error
+//you can use the func below (create user then upload image) to replace the func above (upload image then create user)
 //------------------------------------------------------------------begin
     
     //the "static" allows this func to be accessed from any where
@@ -87,5 +87,12 @@ struct AuthSevice {
         print("DEBUG: signing user in..")
         Auth.auth().signIn(withEmail: emailPassed, password: passwordPassed, completion: completionBlock)
     }
+    
+    
+    //Firebase can sort out users' email associated with account created in the FireStore. So if user is not in Firesbase, it cannot send reset password link
+    static func resetPassword(withEmail email: String, completion: SendPasswordResetCallback?) {
+        Auth.auth().sendPasswordReset(withEmail: email, completion: completion)
+    }
+    
     
 }

@@ -11,6 +11,7 @@ import UIKit
 protocol FeedCellDelegate: class {
     func cell(_ cell: FeedCell, commentFor post: Post)
     func cellLike(_ cell: FeedCell, didLike post: Post)
+    func cellProfile(_ cell: FeedCell, showProfile uid: String)
 }
 
 //When register this cell to the feedController, first register it at "collectionView.register()" and then in the Datasource extension, import it in the "Dequeue" stuff
@@ -25,13 +26,18 @@ class FeedCell: UICollectionViewCell {
     
 //MARK: - Properties
     
-    private let profileImageView: UIImageView = {
+    //make it "lazy var" to add the tap regconizer
+    private lazy var profileImageView: UIImageView = {
         let iv = UIImageView()
         iv.contentMode = .scaleAspectFill
         iv.clipsToBounds = true
         iv.isUserInteractionEnabled = true
         //iv.backgroundColor = .systemPurple
         //iv.image = #imageLiteral(resourceName: "venom-7")
+        
+        let tap = UITapGestureRecognizer(target: self, action: #selector(showUserProfile))
+        iv.isUserInteractionEnabled = true
+        iv.addGestureRecognizer(tap)
         
         return iv
     }()
@@ -42,7 +48,7 @@ class FeedCell: UICollectionViewCell {
         btn.setTitle("venom", for: .normal)
         btn.setTitleColor(.black, for: .normal)
         btn.titleLabel?.font = UIFont.systemFont(ofSize: 13, weight: .regular)
-        btn.addTarget(self, action: #selector(didtapUsername), for: .touchUpInside)
+        btn.addTarget(self, action: #selector(showUserProfile), for: .touchUpInside)
         
         return btn
     }()
@@ -103,7 +109,7 @@ class FeedCell: UICollectionViewCell {
     
     private let postTimeLabel: UILabel = {
         let lb = UILabel()
-        lb.text = "2 days ago"
+        lb.text = "2 d"
         lb.font = UIFont.systemFont(ofSize: 12, weight: .regular)
         lb.textColor = .lightGray
         
@@ -116,7 +122,7 @@ class FeedCell: UICollectionViewCell {
     override init(frame: CGRect) {
         super.init(frame: frame)
         
-        backgroundColor = .cyan
+        //backgroundColor = .cyan
         
         addSubview(profileImageView)
         profileImageView.anchor(top: topAnchor, left: leftAnchor, paddingTop: 12, paddingLeft: 12)
@@ -152,9 +158,10 @@ class FeedCell: UICollectionViewCell {
     
 //MARK: - Actions
     
-    @objc func didtapUsername() {
-        print("DEBUG: did tap usernameButton..")
-        
+    @objc func showUserProfile() {
+        print("DEBUG: did tap usernameButton/profileImageView..")
+        guard let viewMod = viewModel else { return }
+        delegate?.cellProfile(self, showProfile: viewMod.post.ownerUid)
     }
     
     @objc func didTapComment() {
@@ -168,6 +175,7 @@ class FeedCell: UICollectionViewCell {
         guard let viewMod = self.viewModel else { return }
         delegate?.cellLike(self, didLike: viewMod.post)
     }
+    
     
 //MARK: - Helpers
     
@@ -184,16 +192,21 @@ class FeedCell: UICollectionViewCell {
     func configure() {
         guard let profileUrl = viewModel?.ownerProfileImageUrl else {return}
         //print("DEBUG: ownerProfileURL \(profileUrl)")
+        guard let viewMod = viewModel else { return }
         
-        captionLabel.text = viewModel?.caption
-        postImageView.sd_setImage(with: viewModel?.imageUrl)
+        captionLabel.text = viewMod.caption
+        postImageView.sd_setImage(with: viewMod.imageUrl)
         
         profileImageView.sd_setImage(with: profileUrl)
-        usernameButton.setTitle(viewModel?.ownerUsername, for: .normal)
+        usernameButton.setTitle(viewMod.ownerUsername, for: .normal)
         
-        likeLabel.text = viewModel?.likesLabelText
-        likeButton.tintColor = viewModel?.likeButtonTintColor
-        likeButton.setImage(viewModel?.likeButtonImage, for: .normal)
+        likeLabel.text = viewMod.likesLabelText
+        likeButton.tintColor = viewMod.likeButtonTintColor
+        likeButton.setImage(viewMod.likeButtonImage, for: .normal)
+        
+        //use "guard let" to avoid the "Optional" shit
+        guard let time = viewMod.timestampString else { return }
+        postTimeLabel.text = time + " ago"
     }
     
     

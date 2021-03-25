@@ -30,3 +30,13 @@ struct RegistrationViewModel {
         return email?.isEmpty == false && password?.isEmpty == false && fullname?.isEmpty == false && username?.isEmpty == false
     }
 }
+
+
+struct ResetPasswordViewModel {
+    var email: String?
+    
+    var formIsValid: Bool {
+        //the form is only valid (formIsValid == true) if the return statement below is true
+        return email?.isEmpty == false
+    }
+}

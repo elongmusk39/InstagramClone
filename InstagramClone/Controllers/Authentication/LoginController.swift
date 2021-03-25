@@ -7,6 +7,7 @@
 
 import UIKit
 
+//this protocol is set in MainTabController
 protocol AuthenticationDelegate: class {
     func authenticationDidComplete()
 }
@@ -60,6 +61,7 @@ class LoginController: UIViewController {
     private let forgotPasswordButton: UIButton = {
         let btn = UIButton(type: .system)
         btn.attributedTitle(firstPart: "Forgot password? ", secondPart: "Get help signing in")
+        btn.addTarget(self, action: #selector(handleForgotPassword), for: .touchUpInside)
         
         return btn
     }()
@@ -129,6 +131,14 @@ class LoginController: UIViewController {
         
     }
     
+    @objc func handleForgotPassword() {
+        let vc = ResetPasswordController()
+        vc.email = emailTextField.text
+        vc.delegate = self
+        navigationController?.pushViewController(vc, animated: true)
+        
+    }
+    
     @objc func handleLogIn() {
         print("DEBUG: login button tapped..")
         guard let emailTyped = emailTextField.text else { return }
@@ -192,10 +202,17 @@ class LoginController: UIViewController {
      }
      */
 //---------------------------------------------------------------------end
-    
-    
-    
 
-    
+}
 
+//MARK: Protocol reset Pass
+//remember to write ".delegate = self"
+extension LoginController: ResetPasswordControllerDelegate {
+    
+    func controllerSendResetPasswordLink(_ controller: ResetPasswordController) {
+        navigationController?.popViewController(animated: true)
+        self.showMessage(withTitle: "Reset password link sent!", message: "We have just sent a link to your email to reset password.")
+    }
+    
+    
 }

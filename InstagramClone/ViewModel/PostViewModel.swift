@@ -51,6 +51,17 @@ struct PostViewModel {
         return UIImage(named: imageName)
     }
     
+    
+    //this is how we have the "2m" or "2d" or "2w" that indicates sometimes ago
+    var timestampString: String? {
+        let formatter = DateComponentsFormatter()
+        formatter.allowedUnits = [.second, .minute, .hour, .day, .weekOfMonth]
+        formatter.maximumUnitCount = 1 //only 1/5 units in the array above is allowed
+        formatter.unitsStyle = .full
+        return formatter.string(from: post.timestamp.dateValue(), to: Date())
+    }
+    
+    
 //MARK: lifecycle
     
     init(posts: Post) {
